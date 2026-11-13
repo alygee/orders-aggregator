@@ -24,6 +24,14 @@ describe("tzOffsetMinutes", () => {
     expect(tzOffsetMinutes("Asia/Novosibirsk", at)).toBe(420);
     expect(tzOffsetMinutes("America/New_York", at)).toBe(-300);
   });
+
+  it("учитывает переходы на летнее и зимнее время", () => {
+    // Europe/Berlin 2026: летнее с 29.03 01:00Z, зимнее с 25.10 01:00Z
+    expect(tzOffsetMinutes("Europe/Berlin", new Date("2026-03-29T00:59:59Z"))).toBe(60);
+    expect(tzOffsetMinutes("Europe/Berlin", new Date("2026-03-29T01:00:00Z"))).toBe(120);
+    expect(tzOffsetMinutes("Europe/Berlin", new Date("2026-10-25T00:59:59Z"))).toBe(120);
+    expect(tzOffsetMinutes("Europe/Berlin", new Date("2026-10-25T01:00:00Z"))).toBe(60);
+  });
 });
 
 describe("даты", () => {

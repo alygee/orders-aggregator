@@ -34,6 +34,17 @@ describe("POST /sync", () => {
     expect(rows[0].status).toBe("refunded");
   });
 
+  it("сохраняет amountPaid; без поля — без скидки", async () => {
+    const withDiscount = apiOrder({ amount: "3441.00", discountPercent: "25", amountPaid: 2580.75 });
+    const legacy = apiOrder({ amount: 1000 });
+    ctx.api.pages.set(null, { items: [withDiscount, legacy], nextCursor: null });
+    await ctx.app.inject({ method: "POST", url: "/sync" });
+    const { rows } = await ctx.db.query(`SELECT id, amount_kop, paid_kop FROM orders ORDER BY id`);
+    expect(rows.map((r) => [r.id, Number(r.amount_kop), Number(r.paid_kop)])).toEqual(
+      [[withDiscount.id, 344100, 258075], [legacy.id, 100000, 100000]].sort(),
+    );
+  });
+
   it("строковые суммы и даты без зоны", async () => {
     const o = apiOrder({ amount: "2500.00", createdAt: "2026-02-10T21:30:00" });
     ctx.api.pages.set(null, { items: [o], nextCursor: null });

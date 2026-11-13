@@ -89,4 +89,19 @@ describe("GET /customers/:id/daily-totals", () => {
       ["2026-03-31", 200],
     ]);
   });
+
+  it("дни считаются по смещению на момент заказа (переход на зимнее время)", async () => {
+    // Europe/Berlin: до 25.10.2026 UTC+2, после — UTC+1
+    ctx.api.customers.set("c_b", "Europe/Berlin");
+    await postWebhook(ctx.app, apiOrder({ customerId: "c_b", amount: 100, createdAt: "2026-10-23T22:30:00Z" })); // 00:30 24-го
+    await postWebhook(ctx.app, apiOrder({ customerId: "c_b", amount: 200, createdAt: "2026-10-26T22:30:00Z" })); // 23:30 26-го
+    const res = await dailyTotals(ctx.app, "c_b", "2026-10-23", "2026-10-27");
+    expect(res.json().map((d: { date: string; total: number }) => [d.date, d.total])).toEqual([
+      ["2026-10-23", 0],
+      ["2026-10-24", 100],
+      ["2026-10-25", 0],
+      ["2026-10-26", 200],
+      ["2026-10-27", 0],
+    ]);
+  });
 });
