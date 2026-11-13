@@ -67,9 +67,12 @@ describe("GET /customers/:id/daily-totals", () => {
     expect(res.json()).toEqual([{ date: "2026-02-10", total: 1000, gross: 1000, discount: 0, net: 1000 }]);
   });
 
-  it("amountPaid больше amount — заказ отклоняется", async () => {
-    const res = await postWebhook(ctx.app, apiOrder({ amount: 100, amountPaid: 200 }));
-    expect(res.statusCode).toBe(400);
+  it("amountPaid больше amount — заказ не теряется, net = фактически оплачено", async () => {
+    // Отклонить = выкинуть оплаченный заказ из статистики; лучше показать как есть
+    const res = await postWebhook(ctx.app, apiOrder({ amount: 100, amountPaid: 120 }));
+    expect(res.statusCode).toBe(200);
+    const totals = await dailyTotals(ctx.app, "c_1", "2026-02-10", "2026-02-10");
+    expect(totals.json()).toEqual([{ date: "2026-02-10", total: 100, gross: 100, discount: -20, net: 120 }]);
   });
 
   it("дни считаются по смещению на момент заказа (переход на летнее время)", async () => {

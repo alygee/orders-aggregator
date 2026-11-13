@@ -28,7 +28,6 @@ export class OrdersService {
     try {
       const amountKop = toKop(parseRub(o.amount));
       const paidKop = o.amountPaid === undefined ? amountKop : toKop(parseRub(o.amountPaid));
-      if (paidKop > amountKop) throw new Error(`amountPaid > amount: ${o.amountPaid} > ${o.amount}`);
       return {
         id: o.id,
         customerId: o.customerId,
