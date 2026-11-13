@@ -12,6 +12,11 @@ export function buildApp(c: Container, opts: { logger?: boolean } = {}): Fastify
     if (err instanceof AppError) {
       return reply.code(err.statusCode).send({ error: err.code, message: err.message });
     }
+    // Ошибки клиента от Fastify (битый JSON, неверный Content-Type, слишком большое тело) — не 500
+    const status = (err as { statusCode?: number }).statusCode;
+    if (status && status >= 400 && status < 500) {
+      return reply.code(status).send({ error: "bad_request", message: err.message });
+    }
     req.log.error(err);
     return reply.code(500).send({ error: "internal", message: "Internal error" });
   });

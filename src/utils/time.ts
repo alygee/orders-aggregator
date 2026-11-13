@@ -1,4 +1,6 @@
 const HAS_ZONE = /(Z|[+-]\d{2}:?\d{2})$/i;
+// Только полный ISO datetime: Date иначе принимает "1" (→ 2001 год) и "2026-02-30" (→ 2 марта)
+const ISO_DATETIME = /^(\d{4}-\d{2}-\d{2})T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/i;
 
 /**
  * ISO 8601 → Date. По контракту внешний API отдаёт время в UTC,
@@ -7,6 +9,8 @@ const HAS_ZONE = /(Z|[+-]\d{2}:?\d{2})$/i;
 export function parseUtc(raw: unknown): Date {
   if (typeof raw !== "string") throw new Error(`invalid date: ${JSON.stringify(raw)}`);
   const s = raw.trim();
+  const m = ISO_DATETIME.exec(s);
+  if (!m || !isCalendarDate(m[1])) throw new Error(`invalid date: ${JSON.stringify(raw)}`);
   const d = new Date(HAS_ZONE.test(s) ? s : `${s}Z`);
   if (Number.isNaN(d.getTime())) throw new Error(`invalid date: ${JSON.stringify(raw)}`);
   return d;

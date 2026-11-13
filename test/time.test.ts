@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { dateAtOffset, datesBetween, isCalendarDate, parseUtc, tzOffsetMinutes } from "../src/utils/time.js";
 
 describe("parseUtc", () => {
+  it("отклоняет несуществующие даты и не-ISO строки, а не сдвигает их", () => {
+    expect(() => parseUtc("2026-02-30T00:00:00Z")).toThrow();
+    expect(() => parseUtc("2026-02-31T10:00:00")).toThrow();
+    expect(() => parseUtc("1")).toThrow();
+    expect(() => parseUtc("2026-03-29")).toThrow();
+    expect(() => parseUtc("March 29 2026")).toThrow();
+    expect(parseUtc("2026-03-29T22:40:08+02:00").toISOString()).toBe("2026-03-29T20:40:08.000Z");
+  });
+
   it("строка с Z", () => {
     expect(parseUtc("2026-03-01T00:40:39.000Z").toISOString()).toBe("2026-03-01T00:40:39.000Z");
   });

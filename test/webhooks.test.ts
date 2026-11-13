@@ -54,4 +54,15 @@ describe("POST /webhooks/order", () => {
     const res = await postWebhook(ctx.app, { id: "x" });
     expect(res.statusCode).toBe(400);
   });
+
+  it("битый JSON — 400, а не 500", async () => {
+    const res = await ctx.app.inject({
+      method: "POST",
+      url: "/webhooks/order",
+      headers: { "content-type": "application/json" },
+      payload: "{not json",
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toBe("bad_request");
+  });
 });

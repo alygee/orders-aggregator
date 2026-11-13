@@ -12,6 +12,8 @@ describe("parseRub", () => {
     expect(() => parseRub("abc")).toThrow();
     expect(() => parseRub(null)).toThrow();
     expect(() => parseRub(-1)).toThrow();
+    expect(() => parseRub("")).toThrow();
+    expect(() => parseRub("  ")).toThrow();
   });
 });
 
