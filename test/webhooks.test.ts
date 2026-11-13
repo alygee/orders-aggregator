@@ -31,6 +31,25 @@ describe("POST /webhooks/order", () => {
     expect(res.json()).toEqual({ result: "updated" });
   });
 
+  it("параллельные версии одного заказа: сохраняется самая новая", async () => {
+    // Внешний API шлёт вебхуки параллельно и не по порядку
+    const ids: string[] = [];
+    const sends: Promise<unknown>[] = [];
+    for (let i = 0; i < 20; i++) {
+      const o = apiOrder({ status: "pending", updatedAt: "2026-02-10T10:00:00Z" });
+      ids.push(o.id);
+      await postWebhook(ctx.app, o);
+      for (const h of ["13", "11", "12"]) {
+        sends.push(postWebhook(ctx.app, { ...o, status: h === "13" ? "paid" : "refunded", updatedAt: `2026-02-10T${h}:00:00Z` }));
+      }
+    }
+    await Promise.all(sends);
+    const { rows } = await ctx.db.query(`SELECT status, updated_at FROM orders WHERE id = ANY($1)`, [ids]);
+    expect(rows.map((r) => [r.status, r.updated_at.toISOString()])).toEqual(
+      ids.map(() => ["paid", "2026-02-10T13:00:00.000Z"]),
+    );
+  });
+
   it("невалидное тело — 400", async () => {
     const res = await postWebhook(ctx.app, { id: "x" });
     expect(res.statusCode).toBe(400);
