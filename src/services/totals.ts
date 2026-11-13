@@ -22,8 +22,6 @@ export class TotalsService {
    */
   async daily(customerId: string, from: string, to: string): Promise<DailyTotal[]> {
     const timezone = await this.customers.timezone(customerId);
-    const offset = tzOffsetMinutes(timezone, new Date());
-
     // Смещения таймзон в пределах ±14 ч: берём с запасом в сутки с каждой стороны
     const rows = await this.orders.paidCreatedBetween(
       customerId,
@@ -33,7 +31,8 @@ export class TotalsService {
 
     const sums = new Map(datesBetween(from, to).map((d) => [d, 0]));
     for (const o of rows) {
-      const date = dateAtOffset(o.createdAt, offset);
+      // Смещение — на момент заказа, а не «сейчас»: иначе дни через переход на летнее/зимнее время уезжают
+      const date = dateAtOffset(o.createdAt, tzOffsetMinutes(timezone, o.createdAt));
       const cur = sums.get(date);
       if (cur !== undefined) sums.set(date, cur + o.amountKop);
     }
