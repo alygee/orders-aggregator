@@ -4,8 +4,8 @@
 
 /** Сумма из внешнего API: число или строка с числом ("250.10"). */
 export function parseRub(raw: unknown): number {
-  // Number("") === 0: пустая строка не должна становиться нулевой суммой
-  const value = typeof raw === "string" && raw.trim() !== "" ? Number(raw.trim()) : raw;
+  // Только десятичная запись: Number() иначе примет "" (→ 0), "1e3" (→ 1000) и "0x10" (→ 16)
+  const value = typeof raw === "string" && /^\d+(\.\d+)?$/.test(raw.trim()) ? Number(raw.trim()) : raw;
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
     throw new Error(`invalid amount: ${JSON.stringify(raw)}`);
   }

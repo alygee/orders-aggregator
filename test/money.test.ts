@@ -14,6 +14,9 @@ describe("parseRub", () => {
     expect(() => parseRub(-1)).toThrow();
     expect(() => parseRub("")).toThrow();
     expect(() => parseRub("  ")).toThrow();
+    expect(() => parseRub("1e3")).toThrow();
+    expect(() => parseRub("0x10")).toThrow();
+    expect(() => parseRub("Infinity")).toThrow();
   });
 });
 
