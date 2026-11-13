@@ -1,6 +1,16 @@
 # Решение
 
-Коротко о том, что здесь происходит. Задание состояло из двух частей: добавить в `daily-totals` поля про скидки (`gross`, `discount`, `net`) и разобраться, почему по клиенту `c_7` суммы за конец марта не сходятся с платёжной системой. По ходу работы нашлись не одна, а три независимые причины расхождений — плюс одна «почти» причина, которая оказалась ни при чём, но натолкнула на остальные. Ниже — по порядку, что делал, что нашёл и почему.
+[![CI](https://github.com/alygee/orders-aggregator/actions/workflows/ci.yml/badge.svg)](https://github.com/alygee/orders-aggregator/actions/workflows/ci.yml)
+
+## Коротко
+
+- **Скидки** в `daily-totals`: `gross`, `discount`, `net` в копейках, `net` — из `amountPaid`.
+- **Три ошибки, влияющие на отчёт:**
+  1. переход на летнее время — смещение бралось «на сейчас», заказы 29–31.03 у `c_7` уезжали в соседний день (причина жалобы);
+  2. гонка параллельных вебхуков — в базе оставалась не самая новая версия заказа (`net`, а при потерянном возврате и `total`);
+  3. `toKop` терял копейку на float.
+- **Три попутные:** даты вида `2026-02-30` молча сдвигались, `parseRub` принимал `""`/`"1e3"`, ошибки клиента отдавались как 500.
+- На каждое исправление — тест, который падает на старом коде; итог сверен с независимым расчётом прямо в Postgres.
 
 ---
 
@@ -114,6 +124,7 @@ Postgres блокирует строку на время upsert и провер�
 ## Как проверял
 
 1. `npm run typecheck` и `npm test` — 39 тестов, все зелёные. Новые покрывают: скидки через вебхук и через синк, старый формат без `amountPaid`, `amountPaid > amount`, переходы на летнее и зимнее время (`tzOffsetMinutes` на границах и дни в `daily-totals`), float-погрешность в `toKop`, параллельные версии одного заказа, невалидные даты и пустые суммы, битый JSON (400 вместо 500) и миграцию 002 на уже существующих строках (в отдельной схеме, транзакция откатывается).
+   То же гоняет CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) на каждый push в `main` и на каждый pull request: Node 22, PostgreSQL 16 как сервис, `npm ci` → `typecheck` → `npm test`. Тесты идут против настоящего Postgres, а внешний API подменяется фейком, так что CI не зависит от образа мока.
 2. `result.json` получен строго по шагам задания:
     - `docker compose down -v && up -d`,
     - миграции,
@@ -161,13 +172,3 @@ Postgres блокирует строку на время upsert и провер�
 - Бэкфилл `paid_kop` для существующих данных — синк, перезаписывающий версии с тем же `updatedAt`.
 - Хранить `discountPercent`, сверять с `amountPaid` и логировать расхождения (в том числе `amountPaid > amount`). Сейчас в сервисах нет логгера, а тащить его ради одного предупреждения не стал.
 - Отдавать деньги в JSON строкой, а не float — обсудить с потребителями API.
-
-
-https://github.com/udjin-arvel/orders-aggregator
-https://github.com/cyanerd/orders-aggregator
-https://github.com/flavokrkkk/orders-aggregator
-https://github.com/GermanSklyarov/orders-aggregator
-https://github.com/byluginnik-ux/orders-aggregator
-https://github.com/Levon930/orders-aggregator
-https://github.com/liannamyapp/orders-aggregator
-https://github.com/dasferwer/orders-aggregator
